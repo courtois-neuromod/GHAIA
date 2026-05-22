@@ -33,7 +33,7 @@ dashboard = [
     "plotly>=5.18",
 ]
 diagrams = [
-    # Tooling for scripts/generate_architecture_diagram.py — only needed to
+    # Tooling for tools/generate_architecture_diagram.py — only needed to
     # (re)generate assets/model_architectures/*.png, never to run the benchmark.
     # Also requires a system TeX install (pdflatex, e.g. texlive-latex-extra);
     # PlotNeuralNet is git-cloned by the script on first run.
@@ -53,15 +53,15 @@ dev = [
 ]
 
 [project.scripts]
-mariha-generate-scenarios = "scripts.generate_scenarios:main"
+mariha-generate-scenarios = "mariha.env.scenario_gen:main"
 mariha-run-single       = "scripts.run_single:main"
 mariha-run-cl           = "scripts.run_cl:main"
 mariha-evaluate         = "scripts.evaluate:main"
-mariha-architecture-diagram = "scripts.generate_architecture_diagram:main"
+mariha-architecture-diagram = "tools.generate_architecture_diagram:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["mariha*", "scripts*"]
+include = ["mariha*", "scripts*", "tools*"]
 
 [tool.black]
 line-length = 100

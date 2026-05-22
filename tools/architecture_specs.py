@@ -7,7 +7,7 @@ the PNG panels under ``assets/model_architectures/``.
 It is deliberately decoupled from ``mariha/rl/`` so the diagram tooling stays
 lightweight (no TensorFlow import). Because the agent-level wiring — how many
 networks exist, which are targets of which — cannot be reliably auto-derived
-from code, it is declared here by hand. ``scripts/tests/test_architecture_specs.py``
+from code, it is declared here by hand. ``tools/tests/test_architecture_specs.py``
 introspects the real Keras models and fails if a spec drifts out of sync.
 
 Every agent network shares the same ``BaseCNN`` backbone — 4 stride-2 conv

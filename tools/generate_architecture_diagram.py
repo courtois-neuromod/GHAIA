@@ -14,14 +14,14 @@ not a layer-to-layer connection, so it is deliberately not drawn as an arrow.
 This matters because, e.g., SAC builds five independent networks (actor + twin
 critics + twin target critics), not one.
 
-The topology comes from ``scripts/architecture_specs.py`` — a hand-maintained
-registry kept honest by ``scripts/tests/test_architecture_specs.py``.
+The topology comes from ``tools/architecture_specs.py`` — a hand-maintained
+registry kept honest by ``tools/tests/test_architecture_specs.py``.
 
 Usage::
 
-    python scripts/generate_architecture_diagram.py --model sac
-    python scripts/generate_architecture_diagram.py --model ppo --n-actions 9
-    python scripts/generate_architecture_diagram.py --model all
+    python tools/generate_architecture_diagram.py --model sac
+    python tools/generate_architecture_diagram.py --model ppo --n-actions 9
+    python tools/generate_architecture_diagram.py --model all
 
 Output: ``assets/model_architectures/<model>_architecture.png``.
 
@@ -51,8 +51,8 @@ from pathlib import Path
 from typing import Dict, List, Tuple
 
 try:  # installed package / `python -m`
-    from scripts.architecture_specs import AgentArch, Link, Network, get_spec
-except ImportError:  # run directly: python scripts/generate_architecture_diagram.py
+    from tools.architecture_specs import AgentArch, Link, Network, get_spec
+except ImportError:  # run directly: python tools/generate_architecture_diagram.py
     from architecture_specs import AgentArch, Link, Network, get_spec
 
 REPO_ROOT = Path(__file__).resolve().parents[1]

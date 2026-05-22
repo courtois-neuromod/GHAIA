@@ -3,7 +3,7 @@
 #
 # Alternative to the apptainer workflow. Uses a plain Python venv and installs
 # stable-retro from source (the PyPI binary does not work on CC).
-# The existing Dockerfile and narval_test_sac_cl.sh are unchanged.
+# The existing Dockerfile is unchanged.
 #
 # Usage:
 #   bash setup_hpc.sh                      # full setup (prompts for data path + SLURM account)

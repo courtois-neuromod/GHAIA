@@ -1,6 +1,6 @@
 """Drift guard for the hand-maintained architecture specs.
 
-``scripts/architecture_specs.py`` declares each agent's network topology by
+``tools/architecture_specs.py`` declares each agent's network topology by
 hand (the agent-level wiring cannot be reliably auto-derived from code) and
 powers the PNG panels under ``assets/model_architectures/``. These tests
 introspect the *real* Keras models in ``mariha/rl/models.py`` and the agent
@@ -21,7 +21,7 @@ import gymnasium as gym
 import numpy as np
 import pytest
 
-from scripts.architecture_specs import get_spec
+from tools.architecture_specs import get_spec
 
 N_ACTIONS = 9
 NUM_TASKS = 5
