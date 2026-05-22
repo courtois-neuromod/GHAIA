@@ -37,7 +37,7 @@ Usage::
         --subject sub-01 --agent dqn --cl_method packnet \\
         --run_prefix 2026_05_04__13_15_00_seed0 \\
         --session ses-001 \\
-        --experiment_dir $SCRATCH/MariHA/experiments
+        --experiment_dir $MARIHA_DATA_ROOT/experiments
 """
 
 from __future__ import annotations
@@ -56,6 +56,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import mariha.rl  # noqa: F401 — registers all built-in agents
+from mariha.benchmark.config import _default_experiment_dir
 from mariha.benchmark.registry import get_agent_class
 from mariha.curriculum.sequences import HumanSequence
 from mariha.env.base import SCENARIOS_DIR
@@ -94,8 +95,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument(
         "--experiment_dir",
-        default=os.environ.get("MARIHA_EXPERIMENT_DIR", "experiments"),
-        help="Root experiments directory (default: $MARIHA_EXPERIMENT_DIR or 'experiments').",
+        default=_default_experiment_dir(),
+        help="Root experiments directory "
+             "(default: $MARIHA_DATA_ROOT/experiments if set, else 'experiments').",
     )
     p.add_argument(
         "--bids_root",

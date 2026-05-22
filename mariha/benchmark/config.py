@@ -11,11 +11,18 @@ logger that every agent receives at construction time.
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 from typing import Tuple
 
 from mariha.utils.running import get_readable_timestamp, str2bool
+
+
+def _default_experiment_dir() -> str:
+    """Default experiments root: ``$MARIHA_DATA_ROOT/experiments`` when set."""
+    root = os.environ.get("MARIHA_DATA_ROOT")
+    return str(Path(root) / "experiments") if root else "experiments"
 
 
 def _add_common_flags(p: argparse.ArgumentParser) -> None:
@@ -58,8 +65,9 @@ def _add_common_flags(p: argparse.ArgumentParser) -> None:
     p.add_argument(
         "--experiment_dir",
         type=str,
-        default="experiments",
-        help="Root directory for checkpoints and logs.",
+        default=_default_experiment_dir(),
+        help="Root directory for checkpoints and logs "
+             "(default: $MARIHA_DATA_ROOT/experiments if set, else 'experiments').",
     )
     p.add_argument(
         "--render_mode",
