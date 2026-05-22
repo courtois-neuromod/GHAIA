@@ -174,9 +174,8 @@ if [[ "$DOWNLOAD_DATA" == true ]]; then
       info "mario.scenes already present — skipping install."
     fi
 
-    info "Checking out dev_refactor and fetching mario.scenes data..."
+    info "Fetching mario.scenes data..."
     pushd "$DATA_ROOT/mario.scenes" > /dev/null
-    git checkout dev_refactor
     "$DATALAD" get .
     "$PYTHON_VENV" code/archives/decompress.py
     popd > /dev/null
@@ -296,7 +295,7 @@ echo -e "${GREEN}  MariHA setup complete.${NC}"
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 if [[ "$CUSTOM_DATA_ROOT" == true ]]; then
-  echo "  Data path (add to ~/.bashrc for training scripts):"
+  echo "  Data path — export this in your shell before running training:"
   echo "    export MARIHA_DATA_ROOT=$DATA_ROOT"
   echo ""
 fi
