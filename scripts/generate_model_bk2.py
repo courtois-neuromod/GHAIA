@@ -43,6 +43,7 @@ Usage::
 from __future__ import annotations
 
 import argparse
+import csv
 import dataclasses
 import json
 import logging
@@ -213,12 +214,28 @@ def _pack_gamelogs(staging: Path, archive: Path) -> None:
         tmp.unlink(missing_ok=True)
 
 
+def _write_manifest(rows: list[dict], path: Path) -> None:
+    """Write clip outcome rows to clips_manifest.tsv (tab-separated)."""
+    if not rows:
+        return
+    with open(path, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=["clip_code", "outcome", "phase"], delimiter="\t")
+        writer.writeheader()
+        writer.writerows(rows)
+
+
 def _generate_run(
     *, run_id: str, run_specs: list, run_ids: list, checkpoint_dir: Path,
     agent_name: str, train_args: argparse.Namespace, scene_meta: dict,
     staging: Path, max_episode_steps: int,
-) -> int:
-    """Replay every clip of one run into ``staging``. Returns the clip count.
+) -> tuple[int, list[dict]]:
+    """Replay every clip of one run into ``staging``.
+
+    Returns ``(n_generated, manifest_rows)`` where *manifest_rows* is a list
+    of ``{"clip_code": ..., "outcome": ...}`` dicts — one per successfully
+    recorded clip.  Outcome matches the human-pipeline vocabulary:
+    ``"completed"`` (exit reached), ``"death"`` (truncated before step cap),
+    or ``"timeout"`` (truncated at the safety step cap).
 
     stable-retro allows only one emulator per process, so the dummy env used
     to build the agent is closed before any per-clip recording env is opened,
@@ -240,6 +257,7 @@ def _generate_run(
         dummy_env.close()
 
     n_generated = 0
+    manifest_rows: list[dict] = []
     for i, spec in enumerate(run_specs):
         logger.info(
             "  [%d/%d] clip=%s scene=%s",
@@ -261,6 +279,9 @@ def _generate_run(
                 run_ids=run_ids,
                 record_dir=rec_path,
             )
+            terminated = False
+            truncated = False
+            step_count = 0
             try:
                 obs, info = env.reset(episode_spec=play_spec)
                 one_hot = info["task_one_hot"]
@@ -268,6 +289,7 @@ def _generate_run(
                 while not done:
                     action = agent.get_action(obs, one_hot, deterministic=True)
                     obs, _, terminated, truncated, _ = env.step(action)
+                    step_count += 1
                     done = terminated or truncated
             finally:
                 env.unwrapped.stop_record()
@@ -283,9 +305,18 @@ def _generate_run(
                 )
 
             shutil.move(str(bk2_files[0]), str(staging / _bk2_filename(spec)))
+            if terminated:
+                outcome = "completed"
+            elif step_count >= max_episode_steps:
+                outcome = "timeout"
+            else:
+                outcome = "death"
+            logger.info("  clip=%s outcome=%s steps=%d", spec.clip_code, outcome, step_count)
+            manifest_rows.append({"clip_code": spec.clip_code, "outcome": outcome,
+                                   "phase": spec.phase})
             n_generated += 1
 
-    return n_generated
+    return n_generated, manifest_rows
 
 
 def main() -> None:
@@ -336,6 +367,7 @@ def main() -> None:
     session_archive.parent.mkdir(parents=True, exist_ok=True)
     n_generated = 0
     n_clips = 0
+    all_manifest_rows: list[dict] = []
     with tempfile.TemporaryDirectory() as staging_root:
         staging = Path(staging_root) / "gamelogs"
         staging.mkdir()
@@ -361,7 +393,7 @@ def main() -> None:
                 "Run %s (task %d, %d clips) — checkpoint %s",
                 run_id, run_index, len(run_specs), checkpoint_dir.name,
             )
-            n = _generate_run(
+            n, rows = _generate_run(
                 run_id=run_id,
                 run_specs=run_specs,
                 run_ids=run_ids,
@@ -374,9 +406,23 @@ def main() -> None:
             )
             logger.info("Run %s: %d/%d clips generated.", run_id, n, len(run_specs))
             n_generated += n
+            all_manifest_rows.extend(rows)
 
         # ----------------------------------------------------------- #
-        # 3. Pack the whole session into gamelogs.tar in one atomic    #
+        # 3. Write clips_manifest.tsv into the staging folder so it   #
+        #    travels inside gamelogs.tar alongside the .bk2 files.    #
+        #    generate_replays.py detects it automatically and merges  #
+        #    the Outcome field into each clip's _summary.json.        #
+        # ----------------------------------------------------------- #
+        if all_manifest_rows:
+            _write_manifest(all_manifest_rows, staging / "clips_manifest.tsv")
+            logger.info(
+                "Session %s: wrote clips_manifest.tsv (%d entries).",
+                args.session, len(all_manifest_rows),
+            )
+
+        # ----------------------------------------------------------- #
+        # 4. Pack the whole session into gamelogs.tar in one atomic    #
         #    write — this task is the only writer of that file.        #
         # ----------------------------------------------------------- #
         if n_generated == 0:
