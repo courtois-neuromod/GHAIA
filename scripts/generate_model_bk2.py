@@ -294,7 +294,12 @@ def _generate_run(
                     done = terminated or truncated
                 # `terminated` is True for both success and death (see SceneEnv) —
                 # episode_stats.cleared is the only signal that tells them apart.
-                cleared = bool(env.unwrapped.episode_stats.cleared)
+                # NB: env.unwrapped delegates past SceneEnv to the raw retro env
+                # (see SceneEnv.unwrapped), so walk the wrapper chain by hand.
+                inner = env
+                while hasattr(inner, "_env"):
+                    inner = inner._env
+                cleared = bool(inner.episode_stats.cleared)
             finally:
                 env.unwrapped.stop_record()
                 env.close()
