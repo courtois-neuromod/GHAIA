@@ -282,6 +282,7 @@ def _generate_run(
             terminated = False
             truncated = False
             step_count = 0
+            cleared = False
             try:
                 obs, info = env.reset(episode_spec=play_spec)
                 one_hot = info["task_one_hot"]
@@ -291,6 +292,9 @@ def _generate_run(
                     obs, _, terminated, truncated, _ = env.step(action)
                     step_count += 1
                     done = terminated or truncated
+                # `terminated` is True for both success and death (see SceneEnv) —
+                # episode_stats.cleared is the only signal that tells them apart.
+                cleared = bool(env.unwrapped.episode_stats.cleared)
             finally:
                 env.unwrapped.stop_record()
                 env.close()
@@ -305,12 +309,12 @@ def _generate_run(
                 )
 
             shutil.move(str(bk2_files[0]), str(staging / _bk2_filename(spec)))
-            if terminated:
+            if terminated and cleared:
                 outcome = "completed"
-            elif step_count >= max_episode_steps:
-                outcome = "timeout"
-            else:
+            elif terminated:
                 outcome = "death"
+            else:
+                outcome = "timeout"
             logger.info("  clip=%s outcome=%s steps=%d", spec.clip_code, outcome, step_count)
             manifest_rows.append({"clip_code": spec.clip_code, "outcome": outcome,
                                    "phase": spec.phase})
